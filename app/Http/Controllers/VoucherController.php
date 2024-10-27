@@ -14,7 +14,8 @@ class VoucherController extends Controller
 
     public function generateVouchers()
     {
-        GenerateVouchersParentJob::dispatch();
+        Redis::del('voucher_codes'); // Delete the entire set
+        dispatch(new GenerateVouchersParentJob());
         return response()->json(['message' => 'Voucher generation started.']); 
     }
 

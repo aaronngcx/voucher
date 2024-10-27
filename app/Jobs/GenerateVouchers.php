@@ -11,7 +11,6 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Facades\Storage;
 
 class GenerateVouchers implements ShouldQueue
 {
@@ -36,7 +35,6 @@ class GenerateVouchers implements ShouldQueue
     public function handle()
     {
         $startTime = microtime(true);
-
         Log::info("Starting voucher generation for offset {$this->offset} with batch size {$this->batchSize}.");
 
         $codes = [];
@@ -52,31 +50,19 @@ class GenerateVouchers implements ShouldQueue
             }
         }
 
-        Redis::pipeline(function ($pipe) use ($codes) {
-            foreach ($codes as $code) {
-                $pipe->sadd('voucher_codes', $code);
-            }
-        });
-        $this->exportToCsv($codes);
+        Log::info("Codes generated: " . count($codes));
 
+        foreach ($codes as $code) {
+            Redis::sadd('voucher_codes', $code);
+        }
+        Redis::expire('voucher_codes', 3600);
+
+        Log::info("Codes added to Redis.");
         $elapsedTime = microtime(true) - $startTime;
         Log::info('Voucher generation completed.', [
             'batch_size' => $this->batchSize,
             'offset' => $this->offset,
             'time_taken' => round($elapsedTime, 2) . ' seconds',
         ]);
-    }
-
-    protected function exportToCsv(array $codes)
-    {
-        $filePath = 'vouchers/voucher_codes_' . date('Y-m-d_H-i-s') . '.csv'; // Path for CSV file
-        $fileHandle = fopen(storage_path('app/' . $filePath), 'w'); // Open file for writing
-
-        foreach ($codes as $code) {
-            fputcsv($fileHandle, [$code]);
-        }
-
-        fclose($fileHandle); // Close the file
-        Log::info("Voucher codes exported to {$filePath}.");
     }
 }
