@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Jobs;
 
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class GenerateVouchers implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Batchable;
 
-    protected $timeout = 3600; // Set timeout to 1 hour
+    protected $timeout = 3600;
     protected $batchSize;
     protected $offset;
 
@@ -57,26 +58,23 @@ class GenerateVouchers implements ShouldQueue
             $codes = array_merge($codes, $uniqueBatch);
             $uniqueCodesCount += count($uniqueBatch);
 
-            // Log at intervals to reduce log frequency
-            if ($uniqueCodesCount % 10000 === 0) {
+            if ($uniqueCodesCount % 100000 === 0) {
                 Log::info("Generated " . $uniqueCodesCount . " unique vouchers.");
             }
 
-            // If we reached the max retries, exit the loop
             if (count($batch) === count($uniqueBatch)) {
-                break; // All generated codes were unique
+                break;
             }
 
             $retryCount++;
         }
 
-        // Bulk add unique codes to Redis
         if (!empty($codes)) {
             Redis::sadd('voucher_codes', ...$codes);
             Redis::expire('voucher_codes', 3600);
         }
-
         Log::info("Codes added to Redis. Total unique codes generated: " . count($codes));
+
         $elapsedTime = microtime(true) - $startTime;
         Log::info('Voucher generation completed.', [
             'batch_size' => $this->batchSize,

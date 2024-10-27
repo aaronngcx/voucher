@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use Throwable;
+use App\Jobs\ExportVouchersToCsv;
 use Illuminate\Bus\Batch;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
