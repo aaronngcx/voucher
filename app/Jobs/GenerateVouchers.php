@@ -40,7 +40,7 @@ class GenerateVouchers implements ShouldQueue
         $codes = [];
         $uniqueCodesCount = 0;
         $retryCount = 0; // To limit retries for uniqueness
-        $maxRetries = 5; // Adjust this based on your needs
+        $maxRetries = 5;
 
         while ($uniqueCodesCount < $this->batchSize && $retryCount < $maxRetries) {
             $batch = [];
@@ -57,10 +57,6 @@ class GenerateVouchers implements ShouldQueue
 
             $codes = array_merge($codes, $uniqueBatch);
             $uniqueCodesCount += count($uniqueBatch);
-
-            if ($uniqueCodesCount % 100000 === 0) {
-                Log::info("Generated " . $uniqueCodesCount . " unique vouchers.");
-            }
 
             if (count($batch) === count($uniqueBatch)) {
                 break;
