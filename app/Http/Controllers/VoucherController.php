@@ -34,7 +34,7 @@ class VoucherController extends Controller
             $filePath = storage_path('app/vouchers.csv');
 
             if (file_exists($filePath)) {
-                $downloadUrl = asset('storage/vouchers.csv');
+                $downloadUrl = asset('storage/app/vouchers.csv');
                 return response()->json(['download_url' => $downloadUrl]);
             }
         }
