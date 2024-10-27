@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
 use League\Csv\Writer;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use App\Jobs\GenerateVouchersParentJob;
+use App\Jobs\GenerateVouchersParentJob; // Import the parent job
 
 class VoucherController extends Controller
 {

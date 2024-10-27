@@ -2,44 +2,45 @@
 
 namespace App\Jobs;
 
+use Illuminate\Support\Str;
+use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
-use League\Csv\Writer;
-use Illuminate\Support\Str;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Support\Facades\Storage;
 
 class GenerateVouchers implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, Batchable;
 
     protected $timeout = 3600; // Set timeout to 1 hour
+    protected $batchSize;
+    protected $offset;
 
     /**
      * Create a new job instance.
      */
-    public function __construct()
+    public function __construct($batchSize, $offset)
     {
-        //
+        $this->batchSize = $batchSize;
+        $this->offset = $offset;
     }
 
     /**
      * Execute the job.
      */
     public function handle()
-{
-    $totalVouchers = 3000000; // Total voucher codes
-    $batchSize = 50000; // Increased batch size
-    $startTime = microtime(true);
+    {
+        $startTime = microtime(true);
 
-    Log::info('Starting voucher generation.');
+        Log::info("Starting voucher generation for offset {$this->offset} with batch size {$this->batchSize}.");
 
-    for ($batch = 0; $batch < ceil($totalVouchers / $batchSize); $batch++) {
         $codes = [];
-        for ($i = 0; $i < $batchSize; $i++) {
+        for ($i = 0; $i < $this->batchSize; $i++) {
             do {
                 $code = Str::random(10);
             } while (Redis::sismember('voucher_codes', $code));
@@ -47,7 +48,7 @@ class GenerateVouchers implements ShouldQueue
             $codes[] = $code;
 
             if (count($codes) % 10000 === 0) {
-                Log::info("Generated " . count($codes) . " vouchers in batch " . ($batch + 1) . ".");
+                Log::info("Generated " . count($codes) . " vouchers.");
             }
         }
 
@@ -56,16 +57,26 @@ class GenerateVouchers implements ShouldQueue
                 $pipe->sadd('voucher_codes', $code);
             }
         });
+        $this->exportToCsv($codes);
 
-        // Remove or reduce delay
-        // usleep(100000); 
+        $elapsedTime = microtime(true) - $startTime;
+        Log::info('Voucher generation completed.', [
+            'batch_size' => $this->batchSize,
+            'offset' => $this->offset,
+            'time_taken' => round($elapsedTime, 2) . ' seconds',
+        ]);
     }
 
-    $elapsedTime = microtime(true) - $startTime;
-    Log::info('Voucher generation completed.', [
-        'total_vouchers' => $totalVouchers,
-        'time_taken' => round($elapsedTime, 2) . ' seconds',
-    ]);
-}
+    protected function exportToCsv(array $codes)
+    {
+        $filePath = 'vouchers/voucher_codes_' . date('Y-m-d_H-i-s') . '.csv'; // Path for CSV file
+        $fileHandle = fopen(storage_path('app/' . $filePath), 'w'); // Open file for writing
 
+        foreach ($codes as $code) {
+            fputcsv($fileHandle, [$code]);
+        }
+
+        fclose($fileHandle); // Close the file
+        Log::info("Voucher codes exported to {$filePath}.");
+    }
 }

@@ -166,7 +166,7 @@ return [
     |
     */
 
-    'memory_limit' => 64,
+    'memory_limit' => 512,
 
     /*
     |--------------------------------------------------------------------------
@@ -185,14 +185,29 @@ return [
             'queue' => ['default'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
-            'maxProcesses' => 1,
+            'minProcesses' => 7,
+            'maxProcesses' => 15,
             'maxTime' => 0,
             'maxJobs' => 0,
-            'memory' => 256,
+            'memory' => 512,
             'tries' => 1,
-            'timeout' => 180,
+            'timeout' => 300,
             'nice' => 0,
         ],
+        'supervisor-2' => [
+               'connection' => 'redis',
+                'queue' => ['default'],
+                'balance' => 'simple',
+                'autoScalingStrategy' => 'time',
+                'minProcesses' => 7,
+                'maxProcesses' => 15,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 300,
+                'nice' => 0,
+            ],
     ],
 
     'environments' => [
@@ -206,7 +221,32 @@ return [
 
         'local' => [
             'supervisor-1' => [
-                'maxProcesses' => 3,
+               'connection' => 'redis',
+                'queue' => ['default'],
+                'balance' => 'simple',
+                'autoScalingStrategy' => 'time',
+                'minProcesses' => 7,
+                'maxProcesses' => 15,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 300,
+                'nice' => 0,
+            ],
+            'supervisor-2' => [
+               'connection' => 'redis',
+                'queue' => ['default'],
+                'balance' => 'simple',
+                'autoScalingStrategy' => 'time',
+                'minProcesses' => 7,
+                'maxProcesses' => 15,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 512,
+                'tries' => 1,
+                'timeout' => 300,
+                'nice' => 0,
             ],
         ],
     ],
