@@ -15,8 +15,8 @@ Follow these steps to get your Laravel application up and running:
 
 1. **Clone the Repository**
    ```bash
-   git clone <repository-url>
-   cd <project-directory>
+   git clone https://github.com/aaronngcx/voucher.git
+   cd voucher
 
 2. php artisan key:generate
 
