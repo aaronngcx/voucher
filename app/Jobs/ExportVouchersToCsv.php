@@ -11,6 +11,8 @@ class ExportVouchersToCsv implements ShouldQueue
 {
     use Dispatchable;
 
+    public $timeout = 180;
+
     public function handle()
     {
         Log::info('Begin export to CSV');
@@ -22,7 +24,7 @@ class ExportVouchersToCsv implements ShouldQueue
             Log::info("No voucher codes to export.");
             return;
         }
-        Log::info(count($totalCodes));
+
         Log::info('Obtained codes from redis and exporting now');
         $filePath = storage_path('app/vouchers.csv');
         $fileHandle = fopen($filePath, 'w');
@@ -36,8 +38,9 @@ class ExportVouchersToCsv implements ShouldQueue
         }
 
         fclose($fileHandle);
+        Redis::set('csv_ready', 'true');
         Log::info("Exported " . count($totalCodes) . " voucher codes to {$filePath}.");
-
-        //Redis::del('voucher_codes');
+        
+        Redis::del('voucher_codes');
     }
 }

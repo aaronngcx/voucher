@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Jobs;
 
 use Illuminate\Support\Str;
@@ -38,26 +37,46 @@ class GenerateVouchers implements ShouldQueue
         Log::info("Starting voucher generation for offset {$this->offset} with batch size {$this->batchSize}.");
 
         $codes = [];
-        for ($i = 0; $i < $this->batchSize; $i++) {
-            do {
+        $uniqueCodesCount = 0;
+        $retryCount = 0; // To limit retries for uniqueness
+        $maxRetries = 5; // Adjust this based on your needs
+
+        while ($uniqueCodesCount < $this->batchSize && $retryCount < $maxRetries) {
+            $batch = [];
+
+            for ($i = 0; $i < $this->batchSize - $uniqueCodesCount; $i++) {
                 $code = Str::random(10);
-            } while (Redis::sismember('voucher_codes', $code));
-            
-            $codes[] = $code;
-
-            if (count($codes) % 10000 === 0) {
-                Log::info("Generated " . count($codes) . " vouchers.");
+                $batch[] = $code;
             }
+
+            // Check for uniqueness in one go
+            $uniqueBatch = array_filter($batch, function ($code) {
+                return !Redis::sismember('voucher_codes', $code);
+            });
+
+            $codes = array_merge($codes, $uniqueBatch);
+            $uniqueCodesCount += count($uniqueBatch);
+
+            // Log at intervals to reduce log frequency
+            if ($uniqueCodesCount % 10000 === 0) {
+                Log::info("Generated " . $uniqueCodesCount . " unique vouchers.");
+            }
+
+            // If we reached the max retries, exit the loop
+            if (count($batch) === count($uniqueBatch)) {
+                break; // All generated codes were unique
+            }
+
+            $retryCount++;
         }
 
-        Log::info("Codes generated: " . count($codes));
-
-        foreach ($codes as $code) {
-            Redis::sadd('voucher_codes', $code);
+        // Bulk add unique codes to Redis
+        if (!empty($codes)) {
+            Redis::sadd('voucher_codes', ...$codes);
+            Redis::expire('voucher_codes', 3600);
         }
-        Redis::expire('voucher_codes', 3600);
 
-        Log::info("Codes added to Redis.");
+        Log::info("Codes added to Redis. Total unique codes generated: " . count($codes));
         $elapsedTime = microtime(true) - $startTime;
         Log::info('Voucher generation completed.', [
             'batch_size' => $this->batchSize,
