@@ -24,7 +24,7 @@ Follow these steps to get your Laravel application up and running:
 
 4. docker-compose build
 
-5. composer install
+5. docker-compose run --rm app composer install
 
 6. docker-compose up -d
 
