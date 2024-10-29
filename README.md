@@ -18,9 +18,9 @@ Follow these steps to get your Laravel application up and running:
    git clone https://github.com/aaronngcx/voucher.git
    cd voucher
 
-2. php artisan key:generate
+2. cp .env.example .env
 
-3. cp .env.example .env
+3. php artisan key:generate
 
 4. docker-compose build
 
